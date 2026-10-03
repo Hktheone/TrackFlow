@@ -1,0 +1,155 @@
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 32px 16px;
+  background: radial-gradient(circle at 20% 10%, #e0e7ff 0, transparent 45%), var(--bg);
+}
+
+.auth-card,
+.demo {
+  width: min(400px, 100%);
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgb(15 23 42 / 0.06);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+
+  h1 {
+    font-size: 20px;
+  }
+
+  p {
+    margin: 2px 0 0;
+  }
+}
+
+.logo {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.full {
+  width: 100%;
+  padding: 10px;
+}
+
+.error,
+.notice {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.error {
+  background: var(--tone-danger-bg);
+  color: var(--tone-danger-fg);
+}
+
+.notice {
+  margin-bottom: 16px;
+  background: var(--tone-progress-bg);
+  color: var(--tone-progress-fg);
+}
+
+.switch {
+  margin: 20px 0 0;
+  text-align: center;
+  color: var(--muted);
+}
+
+.demo {
+  h2 {
+    margin-bottom: 4px;
+  }
+
+  > p {
+    margin: 0 0 16px;
+  }
+}
+
+.demo-account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: var(--surface-hover);
+  }
+}
+
+.demo-text {
+  display: flex;
+  flex-direction: column;
+
+  small {
+    color: var(--muted);
+    font-size: 12px;
+  }
+}
+
+.role-tag {
+  flex: none;
+  width: 52px;
+  padding: 3px 0;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+
+  &.role-ADMIN {
+    background: var(--tone-danger-bg);
+    color: var(--tone-danger-fg);
+  }
+
+  &.role-USER {
+    background: var(--tone-info-bg);
+    color: var(--tone-info-fg);
+  }
+
+  &.role-RIDER {
+    background: var(--tone-progress-bg);
+    color: var(--tone-progress-fg);
+  }
+}
+
+.hint-error {
+  color: var(--tone-danger-fg);
+  font-size: 12px;
+}

@@ -1,0 +1,61 @@
+<header class="page-header">
+  <div>
+    <h1>{{ auth.hasRole('RIDER') ? 'My deliveries' : auth.isAdmin() ? 'All deliveries' : 'Deliveries' }}</h1>
+    <p>{{ auth.hasRole('RIDER') ? 'Jobs assigned to you. Open one to update it and share your location.' : 'Created automatically when delivery-service consumes an ORDER_CONFIRMED event.' }}</p>
+  </div>
+</header>
+
+<div class="filter-tabs">
+  <button type="button" [class.active]="filter() === 'ACTIVE'" (click)="filter.set('ACTIVE')">
+    Active ({{ activeCount() }})
+  </button>
+  <button type="button" [class.active]="filter() === null" (click)="filter.set(null)">
+    All ({{ deliveries().length }})
+  </button>
+  @for (f of filters(); track f.status) {
+    <button type="button" [class.active]="filter() === f.status" (click)="filter.set(f.status)">
+      {{ f.label }} ({{ f.count }})
+    </button>
+  }
+</div>
+
+<section class="card">
+  @if (deliveriesResource.isLoading() && !deliveriesResource.hasValue()) {
+    <p class="empty">Loading deliveries…</p>
+  } @else if (visible().length === 0) {
+    <p class="empty">Nothing here. Confirm an order and its delivery will appear within a second or two.</p>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Customer</th>
+            <th>Deliver to</th>
+            <th>Rider</th>
+            <th>Status</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of visible(); track d.id) {
+            <tr class="clickable" (click)="open(d)">
+              <td class="mono">{{ d.orderNumber }}</td>
+              <td>{{ d.customerName }}</td>
+              <td class="address">{{ d.deliveryAddress }}</td>
+              <td>
+                @if (d.courier; as c) {
+                  {{ vehicleIcons[c.vehicleType] }} {{ c.name }}
+                } @else {
+                  <span class="muted">Unassigned</span>
+                }
+              </td>
+              <td><app-status-badge [status]="d.status" /></td>
+              <td class="muted">{{ d.updatedAt | date: 'MMM d, HH:mm:ss' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

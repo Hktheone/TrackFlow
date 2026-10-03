@@ -1,0 +1,48 @@
+<div class="auth-page">
+  <section class="auth-card">
+    <div class="brand">
+      <span class="logo">TF</span>
+      <div>
+        <h1>Log in to TrackFlow</h1>
+        <p class="muted">Orders &amp; deliveries, tracked end to end</p>
+      </div>
+    </div>
+
+    @if (expired()) {
+      <p class="notice">Your session ended. Please log in again.</p>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <div class="field">
+        <label for="username">Username</label>
+        <input id="username" formControlName="username" autocomplete="username" autofocus />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" type="password" formControlName="password" autocomplete="current-password" />
+      </div>
+      @if (error(); as message) {
+        <p class="error" role="alert">{{ message }}</p>
+      }
+      <button type="submit" class="btn primary full" [disabled]="submitting()">
+        {{ submitting() ? 'Logging in…' : 'Log in' }}
+      </button>
+    </form>
+
+    <p class="switch">New here? <a routerLink="/register">Create an account</a></p>
+  </section>
+
+  <section class="demo">
+    <h2>Try a demo account</h2>
+    <p class="muted">One click logs you in. They share the password <span class="mono">trackflow123</span>.</p>
+    @for (account of demoAccounts; track account.username) {
+      <button type="button" class="demo-account" [disabled]="submitting()" (click)="useDemo(account)">
+        <span class="role-tag" [class]="'role-tag role-' + account.role">{{ account.role }}</span>
+        <span class="demo-text">
+          <strong>{{ account.username }}</strong>
+          <small>{{ account.description }}</small>
+        </span>
+      </button>
+    }
+  </section>
+</div>

@@ -1,0 +1,38 @@
+@if (auth.user(); as user) {
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="brand" routerLink="/">
+        <span class="logo">TF</span>
+        <span>
+          <strong>TrackFlow</strong>
+          <small>Orders &amp; deliveries</small>
+        </span>
+      </a>
+      <nav>
+        @for (item of nav(); track item.label) {
+          <a [routerLink]="item.path" routerLinkActive="active">
+            <span class="icon" aria-hidden="true">{{ item.icon }}</span>
+            {{ item.label }}
+          </a>
+        }
+      </nav>
+
+      <div class="account">
+        <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+        <div class="who">
+          <strong>{{ user.displayName }}</strong>
+          <small>{{ '@' + user.username }} · <span class="role" [class]="'role role-' + user.role">{{ roleLabel() }}</span></small>
+        </div>
+        <button type="button" class="logout" title="Log out" aria-label="Log out" (click)="auth.logout()">⏻</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </div>
+} @else {
+  <router-outlet />
+}
+
+<app-toast-host />

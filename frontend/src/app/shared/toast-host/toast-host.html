@@ -1,0 +1,8 @@
+<div class="toasts" aria-live="polite">
+  @for (toast of notifications.toasts(); track toast.id) {
+    <div class="toast" [class.error]="toast.kind === 'error'" role="status">
+      <span>{{ toast.message }}</span>
+      <button type="button" aria-label="Dismiss" (click)="notifications.dismiss(toast.id)">×</button>
+    </div>
+  }
+</div>

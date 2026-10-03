@@ -1,0 +1,44 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: delivery-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:15434/deliveries}
+    username: ${DB_USERNAME:trackflow}
+    password: ${DB_PASSWORD:trackflow}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema; Hibernate only checks the entities still match it.
+      ddl-auto: validate
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Public keys come from the gateway, which issues the tokens; fetched lazily and cached.
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:8080/.well-known/jwks.json}
+          issuer-uri: ${AUTH_ISSUER:trackflow-gateway}
+          authorities-claim-name: roles
+          authority-prefix: ROLE_
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
+    producer:
+      acks: all
+    consumer:
+      group-id: delivery-service
+      auto-offset-reset: earliest
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

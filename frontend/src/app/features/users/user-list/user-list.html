@@ -1,0 +1,89 @@
+<header class="page-header">
+  <div>
+    <h1>Users</h1>
+    <p>
+      @for (c of counts(); track c.role; let last = $last) {
+        {{ c.count }} {{ humanize(c.role).toLowerCase() }}{{ c.count === 1 ? '' : 's' }}{{ last ? '' : ' · ' }}
+      }
+    </p>
+  </div>
+  <button type="button" class="btn primary" (click)="showForm.set(!showForm())">
+    {{ showForm() ? 'Close' : '+ Add user' }}
+  </button>
+</header>
+
+@if (showForm()) {
+  <form class="card add-form" [formGroup]="form" (ngSubmit)="create()">
+    <div class="field">
+      <label for="displayName">Name</label>
+      <input id="displayName" formControlName="displayName" />
+    </div>
+    <div class="field">
+      <label for="username">Username</label>
+      <input id="username" formControlName="username" autocomplete="off" />
+    </div>
+    <div class="field">
+      <label for="password">Temporary password</label>
+      <input id="password" type="password" formControlName="password" autocomplete="new-password" />
+    </div>
+    <div class="field">
+      <label for="role">Role</label>
+      <select id="role" formControlName="role">
+        @for (role of roles; track role) {
+          <option [value]="role">{{ humanize(role) }}</option>
+        }
+      </select>
+    </div>
+    <button type="submit" class="btn primary" [disabled]="busy()">Create</button>
+  </form>
+}
+
+<section class="card table-card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Joined</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (user of users(); track user.id) {
+          <tr [class.disabled]="!user.enabled">
+            <td>
+              <strong>{{ user.displayName }}</strong>
+              <div class="muted mono">{{ user.username }}{{ isSelf(user) ? ' (you)' : '' }}</div>
+            </td>
+            <td>
+              <select
+                class="role-select"
+                [attr.aria-label]="'Role for ' + user.username"
+                [value]="user.role"
+                [disabled]="isSelf(user) || busy()"
+                (change)="changeRole(user, $event)"
+              >
+                @for (role of roles; track role) {
+                  <option [value]="role" [selected]="role === user.role">{{ humanize(role) }}</option>
+                }
+              </select>
+            </td>
+            <td>
+              <span class="state" [class.off]="!user.enabled">{{ user.enabled ? 'Active' : 'Disabled' }}</span>
+            </td>
+            <td class="muted">{{ user.createdAt | date: 'MMM d, y' }}</td>
+            <td class="num">
+              @if (!isSelf(user)) {
+                <button type="button" class="btn small" [class.danger]="user.enabled" [disabled]="busy()" (click)="toggleEnabled(user)">
+                  {{ user.enabled ? 'Disable' : 'Enable' }}
+                </button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

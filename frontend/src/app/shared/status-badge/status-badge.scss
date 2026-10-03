@@ -1,0 +1,43 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+}
+
+.tone-neutral {
+  background: var(--tone-neutral-bg);
+  color: var(--tone-neutral-fg);
+}
+
+.tone-info {
+  background: var(--tone-info-bg);
+  color: var(--tone-info-fg);
+}
+
+.tone-progress {
+  background: var(--tone-progress-bg);
+  color: var(--tone-progress-fg);
+}
+
+.tone-success {
+  background: var(--tone-success-bg);
+  color: var(--tone-success-fg);
+}
+
+.tone-danger {
+  background: var(--tone-danger-bg);
+  color: var(--tone-danger-fg);
+}

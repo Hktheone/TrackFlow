@@ -1,0 +1,24 @@
+server:
+  port: 8761
+
+spring:
+  application:
+    name: eureka-server
+
+eureka:
+  instance:
+    hostname: ${EUREKA_HOSTNAME:localhost}
+  client:
+    # A standalone registry: it does not register with, or fetch from, itself.
+    register-with-eureka: false
+    fetch-registry: false
+  server:
+    # Single-node dev setup, so don't wait for peers before serving the registry.
+    wait-time-in-ms-when-sync-empty: 0
+    enable-self-preservation: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

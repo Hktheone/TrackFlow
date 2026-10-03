@@ -1,0 +1,67 @@
+<header class="page-header">
+  <div>
+    <h1>Riders</h1>
+    <p>{{ availableCount() }} of {{ couriers().length }} free right now. Customers pick from the free riders when they assign a delivery.</p>
+  </div>
+  <button type="button" class="btn primary" (click)="showForm.set(!showForm())">
+    {{ showForm() ? 'Close' : '+ Add rider' }}
+  </button>
+</header>
+
+@if (showForm()) {
+  <form class="card add-form" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="field">
+      <label for="name">Name</label>
+      <input id="name" formControlName="name" />
+    </div>
+    <div class="field">
+      <label for="phone">Phone</label>
+      <input id="phone" formControlName="phone" />
+    </div>
+    <div class="field">
+      <label for="vehicleType">Vehicle</label>
+      <select id="vehicleType" formControlName="vehicleType">
+        @for (type of vehicleTypes; track type) {
+          <option [value]="type">{{ vehicleIcons[type] }} {{ humanize(type) }}</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label for="username">Login username</label>
+      <input id="username" formControlName="username" autocomplete="off" />
+    </div>
+    <div class="field">
+      <label for="password">Password <span class="muted">(blank = existing account)</span></label>
+      <input id="password" type="password" formControlName="password" autocomplete="new-password" />
+    </div>
+    <button type="submit" class="btn primary" [disabled]="saving()">Save</button>
+  </form>
+}
+
+<section class="grid">
+  @for (c of couriers(); track c.id) {
+    <article class="card courier">
+      <div class="top">
+        <span class="vehicle">{{ vehicleIcons[c.vehicleType] }}</span>
+        <div>
+          <strong>{{ c.name }}</strong>
+          <div class="muted">{{ c.phone }}</div>
+        </div>
+        <span class="availability" [class.busy]="!c.available">{{ c.available ? 'Free' : 'On delivery' }}</span>
+      </div>
+      <div class="meta muted">
+        {{ humanize(c.vehicleType) }}
+        @if (c.username) {
+          · <span class="mono">{{ c.username }}</span>
+        } @else {
+          · <span class="unlinked">no login linked</span>
+        }
+        @if (c.lastLocationAt) {
+          · seen {{ c.lastLocationAt | date: 'HH:mm:ss' }}
+        }
+      </div>
+    </article>
+  } @empty {
+    <p class="empty">No riders yet.</p>
+  }
+</section>

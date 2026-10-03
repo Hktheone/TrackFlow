@@ -1,0 +1,139 @@
+<a class="back-link" routerLink="/orders">← Orders</a>
+
+@if (order(); as o) {
+  <header class="page-header">
+    <div>
+      <h1>
+        <span class="mono order-number">{{ o.orderNumber }}</span>
+        <app-status-badge [status]="o.status" />
+      </h1>
+      <p>Placed {{ o.createdAt | date: 'MMM d, y, HH:mm' }} · last update {{ o.updatedAt | date: 'HH:mm:ss' }}</p>
+    </div>
+    <div class="actions">
+      @if (canConfirm()) {
+        <button type="button" class="btn primary" [disabled]="busy()" (click)="confirm()">Confirm order</button>
+      }
+      @if (canCancel()) {
+        <input
+          class="reason"
+          placeholder="Cancel reason (optional)"
+          aria-label="Cancel reason"
+          [value]="cancelReason()"
+          (input)="onReasonInput($event)"
+        />
+        <button type="button" class="btn danger" [disabled]="busy()" (click)="cancel()">Cancel order</button>
+      }
+    </div>
+  </header>
+
+  <section class="card stepper-card">
+    <ol class="stepper">
+      @for (step of steps(); track step.status) {
+        <li [class]="step.state">
+          <span class="dot"></span>
+          <span class="label">{{ step.label }}</span>
+        </li>
+      }
+    </ol>
+    @if (stoppedReason(); as reason) {
+      <p class="stopped">
+        <app-status-badge [status]="reason" />
+        This order left the normal flow.
+      </p>
+    }
+  </section>
+
+  <div class="detail-grid">
+    <div class="column">
+      <section class="card">
+        <h2>Customer</h2>
+        <dl class="facts">
+          <dt>Name</dt>
+          <dd>{{ o.customerName }}</dd>
+          <dt>Phone</dt>
+          <dd>{{ o.customerPhone ?? '—' }}</dd>
+          <dt>Address</dt>
+          <dd>{{ o.deliveryAddress }}</dd>
+        </dl>
+      </section>
+
+      <section class="card">
+        <h2>Items</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th class="num">Qty</th>
+              <th class="num">Unit</th>
+              <th class="num">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of o.items; track $index) {
+              <tr>
+                <td>{{ item.productName }}</td>
+                <td class="num">{{ item.quantity }}</td>
+                <td class="num">{{ item.unitPrice | currency: 'GBP' }}</td>
+                <td class="num">{{ item.lineTotal | currency: 'GBP' }}</td>
+              </tr>
+            }
+            <tr class="total-row">
+              <td colspan="3">Order total</td>
+              <td class="num">{{ o.totalAmount | currency: 'GBP' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>Delivery</h2>
+        @if (delivery(); as d) {
+          <dl class="facts">
+            <dt>Status</dt>
+            <dd><app-status-badge [status]="d.status" /></dd>
+            <dt>Rider</dt>
+            <dd>
+              @if (d.courier; as c) {
+                {{ vehicleIcons[c.vehicleType] }} {{ c.name }} <span class="muted">· {{ c.phone }}</span>
+              } @else {
+                <span class="muted">No rider yet</span>
+              }
+            </dd>
+          </dl>
+          <a class="btn small track-link" [routerLink]="['/deliveries', d.id]">Open delivery &amp; tracking →</a>
+        } @else if (o.status === 'PENDING') {
+          <p class="muted">
+            No delivery yet. Confirming publishes <span class="mono">ORDER_CONFIRMED</span>; delivery-service consumes
+            it and creates one automatically.
+          </p>
+        } @else if (o.status === 'CANCELLED') {
+          <p class="muted">Cancelled before a delivery was created.</p>
+        } @else {
+          <p class="muted">Waiting for delivery-service to consume the event…</p>
+        }
+      </section>
+    </div>
+
+    <section class="card">
+      <h2>Status history</h2>
+      <ol class="timeline">
+        @for (entry of history(); track $index) {
+          <li [class.event]="entry.source === 'DELIVERY_EVENT'">
+            <div class="when">{{ entry.changedAt | date: 'HH:mm:ss' }}</div>
+            <div class="what">
+              <app-status-badge [status]="entry.status" />
+              @if (entry.note) {
+                <p>{{ entry.note }}</p>
+              }
+              <span class="source">via {{ sourceLabel(entry) }}</span>
+            </div>
+          </li>
+        }
+      </ol>
+    </section>
+  </div>
+} @else if (orderResource.error()) {
+  <p class="card empty">This order could not be loaded.</p>
+} @else {
+  <p class="empty">Loading order…</p>
+}

@@ -1,0 +1,213 @@
+name: trackflow
+
+# Shared settings for the Spring Boot services.
+x-spring-service: &spring-service
+  restart: unless-stopped
+  environment: &spring-env
+    EUREKA_URL: http://eureka-server:8761/eureka/
+    KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    DB_USERNAME: ${POSTGRES_USER:-trackflow}
+    DB_PASSWORD: ${POSTGRES_PASSWORD:-trackflow}
+    # Services verify tokens with the gateway's public key.
+    JWK_SET_URI: http://api-gateway:8080/.well-known/jwks.json
+
+services:
+
+  # ---------- infrastructure ----------
+
+  kafka:
+    image: apache/kafka:4.1.0
+    container_name: trackflow-kafka
+    restart: unless-stopped
+    ports:
+      - "9094:9094"   # for services run from the IDE on the host
+    environment:
+      # Single-node KRaft: this one process is both broker and controller, no ZooKeeper.
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 3
+    # No volume: the event log lives in the container, so `docker compose down` gives a clean slate.
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 15s
+
+  kafka-ui:
+    image: ghcr.io/kafbat/kafka-ui:latest
+    container_name: trackflow-kafka-ui
+    profiles: ["tools"]   # docker compose --profile tools up
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: trackflow
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  order-db:
+    image: postgres:17-alpine
+    container_name: trackflow-order-db
+    restart: unless-stopped
+    ports:
+      - "15433:5432"
+    environment:
+      POSTGRES_DB: orders
+      POSTGRES_USER: ${POSTGRES_USER:-trackflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trackflow}
+    volumes:
+      - order-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  delivery-db:
+    image: postgres:17-alpine
+    container_name: trackflow-delivery-db
+    restart: unless-stopped
+    ports:
+      - "15434:5432"
+    environment:
+      POSTGRES_DB: deliveries
+      POSTGRES_USER: ${POSTGRES_USER:-trackflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trackflow}
+    volumes:
+      - delivery-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  auth-db:
+    image: postgres:17-alpine
+    container_name: trackflow-auth-db
+    restart: unless-stopped
+    ports:
+      - "15435:5432"
+    environment:
+      POSTGRES_DB: auth
+      POSTGRES_USER: ${POSTGRES_USER:-trackflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trackflow}
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ---------- platform ----------
+
+  eureka-server:
+    build: ./backend/eureka-server
+    image: trackflow/eureka-server:latest
+    container_name: trackflow-eureka
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    environment:
+      EUREKA_HOSTNAME: eureka-server
+    healthcheck: &actuator-health
+      # The JRE image has no curl, so ask /actuator/health over a raw bash TCP socket.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8761 && printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
+
+  api-gateway:
+    <<: *spring-service
+    build: ./backend/api-gateway
+    image: trackflow/api-gateway:latest
+    container_name: trackflow-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      <<: *spring-env
+      # The gateway also owns login: users, roles and token signing keys live in auth-db.
+      DB_URL: jdbc:postgresql://auth-db:5432/auth
+      CORS_ALLOWED_ORIGINS: http://localhost:4200,http://localhost:3000
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-trackflow123}
+    healthcheck:
+      <<: *actuator-health
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  # ---------- business services ----------
+
+  order-service:
+    <<: *spring-service
+    build: ./backend/order-service
+    image: trackflow/order-service:latest
+    container_name: trackflow-order-service
+    # No published port: the only way in from outside is through the gateway.
+    environment:
+      <<: *spring-env
+      DB_URL: jdbc:postgresql://order-db:5432/orders
+    healthcheck:
+      <<: *actuator-health
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8081 && printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+    depends_on:
+      order-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  delivery-service:
+    <<: *spring-service
+    build: ./backend/delivery-service
+    image: trackflow/delivery-service:latest
+    container_name: trackflow-delivery-service
+    # No published port: the only way in from outside is through the gateway.
+    environment:
+      <<: *spring-env
+      DB_URL: jdbc:postgresql://delivery-db:5432/deliveries
+    healthcheck:
+      <<: *actuator-health
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8082 && printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+    depends_on:
+      delivery-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  # ---------- frontend ----------
+
+  frontend:
+    build: ./frontend
+    image: trackflow/frontend:latest
+    container_name: trackflow-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+
+volumes:
+  auth-db-data:
+  order-db-data:
+  delivery-db-data:

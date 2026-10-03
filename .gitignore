@@ -1,0 +1,17 @@
+# Build output
+target/
+dist/
+.angular/
+node_modules/
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local config & tooling
+.env
+.claude/
+*.log

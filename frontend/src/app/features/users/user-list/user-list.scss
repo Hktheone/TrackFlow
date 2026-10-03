@@ -1,0 +1,39 @@
+.add-form {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 20px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.table-card {
+  padding: 8px;
+}
+
+.role-select {
+  width: auto;
+  min-width: 110px;
+  padding: 5px 8px;
+}
+
+.state {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--tone-success-bg);
+  color: var(--tone-success-fg);
+  font-size: 12px;
+  font-weight: 600;
+
+  &.off {
+    background: var(--tone-neutral-bg);
+    color: var(--tone-neutral-fg);
+  }
+}
+
+tr.disabled td {
+  opacity: 0.6;
+}

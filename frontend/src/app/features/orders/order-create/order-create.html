@@ -1,0 +1,67 @@
+<a class="back-link" routerLink="/orders">← Orders</a>
+<header class="page-header">
+  <div>
+    <h1>Checkout</h1>
+    <p>Creating an order publishes <span class="mono">ORDER_CREATED</span> to the order-events topic.</p>
+  </div>
+  <button type="button" class="btn" (click)="fillSample()">Fill sample data</button>
+</header>
+
+<form class="layout" [formGroup]="form" (ngSubmit)="submit()">
+  <section class="card">
+    <h2>Customer</h2>
+    <div class="fields">
+      <div class="field">
+        <label for="customerName">Name</label>
+        <input id="customerName" formControlName="customerName" autocomplete="name" />
+      </div>
+      <div class="field">
+        <label for="customerPhone">Phone <span class="muted">(optional)</span></label>
+        <input id="customerPhone" formControlName="customerPhone" autocomplete="tel" />
+      </div>
+      <div class="field full">
+        <label for="deliveryAddress">Delivery address</label>
+        <textarea id="deliveryAddress" rows="2" formControlName="deliveryAddress"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Items</h2>
+    <div class="items" formArrayName="items">
+      <div class="item-row head">
+        <span>Product</span>
+        <span>Qty</span>
+        <span>Unit price</span>
+        <span></span>
+      </div>
+      @for (item of items.controls; track item; let i = $index) {
+        <div class="item-row" [formGroupName]="i">
+          <input formControlName="productName" placeholder="Product name" [attr.aria-label]="'Product ' + (i + 1)" />
+          <input type="number" min="1" formControlName="quantity" aria-label="Quantity" />
+          <input type="number" min="0.01" step="0.01" formControlName="unitPrice" aria-label="Unit price" />
+          <button
+            type="button"
+            class="btn small"
+            aria-label="Remove item"
+            [disabled]="items.length === 1"
+            (click)="removeItem(i)"
+          >
+            ×
+          </button>
+        </div>
+      }
+    </div>
+    <div class="items-footer">
+      <button type="button" class="btn small" (click)="addItem()">+ Add item</button>
+      <span class="total">Total <strong>{{ total() | currency: 'GBP' }}</strong></span>
+    </div>
+  </section>
+
+  <div class="actions">
+    <button type="submit" class="btn primary" [disabled]="submitting()">
+      {{ submitting() ? 'Creating…' : 'Create order' }}
+    </button>
+    <a class="btn" routerLink="/orders">Cancel</a>
+  </div>
+</form>

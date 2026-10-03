@@ -1,0 +1,150 @@
+<a class="back-link" routerLink="/deliveries">← {{ auth.hasRole('RIDER') ? 'My deliveries' : 'Deliveries' }}</a>
+
+@if (delivery(); as d) {
+  <header class="page-header">
+    <div>
+      <h1>
+        Delivery for <span class="mono">{{ d.orderNumber }}</span>
+        <app-status-badge [status]="d.status" />
+      </h1>
+      <p>
+        Created {{ d.createdAt | date: 'MMM d, HH:mm:ss' }}
+        @if (!auth.hasRole('RIDER')) {
+          · <a [routerLink]="['/orders', d.orderId]">view order</a>
+        }
+      </p>
+    </div>
+  </header>
+
+  <div class="detail-grid">
+    <div class="column">
+      @if (isMyJob() && d.status !== 'DELIVERED' && d.status !== 'FAILED' && d.status !== 'CANCELLED') {
+        <section class="card job-banner">
+          <strong>This delivery is assigned to you.</strong>
+          <span>Pick it up, share your location while you ride, and mark it delivered at the door.</span>
+        </section>
+      }
+
+      <section class="card">
+        <h2>Status</h2>
+        @if (actions().length > 0) {
+          <div class="field">
+            <label for="note">Note <span class="muted">(optional, sent with the event)</span></label>
+            <input id="note" [value]="note()" (input)="onNoteInput($event)" placeholder="e.g. Left with reception" />
+          </div>
+          <div class="actions spaced">
+            @for (action of actions(); track action.status) {
+              <button
+                type="button"
+                class="btn"
+                [class.primary]="!action.danger"
+                [class.danger]="action.danger"
+                [disabled]="busy()"
+                (click)="setStatus(action)"
+              >
+                {{ action.label }}
+              </button>
+            }
+          </div>
+          <p class="hint">Each change is published to <span class="mono">delivery-status-events</span>; order-service consumes it and updates the order.</p>
+        } @else if (d.status === 'PENDING_ASSIGNMENT') {
+          <p class="muted">
+            {{ canAssign() ? 'Choose a rider below to start the delivery.' : 'Waiting for a rider to be assigned.' }}
+          </p>
+        } @else if (d.status === 'DELIVERED' || d.status === 'FAILED' || d.status === 'CANCELLED') {
+          <p class="muted">This delivery is {{ humanize(d.status).toLowerCase() }}; no further changes.</p>
+        } @else {
+          <p class="muted">The rider updates this as they go; it refreshes automatically.</p>
+        }
+        @if (d.note) {
+          <p class="last-note"><span class="muted">Last note:</span> {{ d.note }}</p>
+        }
+      </section>
+
+      <section class="card">
+        <h2>Rider</h2>
+        @if (d.courier; as c) {
+          <div class="courier">
+            <span class="vehicle">{{ vehicleIcons[c.vehicleType] }}</span>
+            <div>
+              <strong>{{ c.name }}</strong>
+              <div class="muted">{{ c.phone }} · {{ humanize(c.vehicleType) }}</div>
+            </div>
+          </div>
+        } @else {
+          <p class="muted">No rider assigned yet.</p>
+        }
+
+        @if (canAssign()) {
+          <div class="assign">
+            <select aria-label="Rider" [value]="selectedCourier()" (change)="onCourierChange($event)">
+              <option value="">
+                {{ availableCouriers().length ? (d.courier ? 'Reassign to…' : 'Choose a rider…') : 'No riders free right now' }}
+              </option>
+              @for (c of availableCouriers(); track c.id) {
+                <option [value]="c.id">{{ vehicleIcons[c.vehicleType] }} {{ c.name }}</option>
+              }
+            </select>
+            <button type="button" class="btn primary" [disabled]="!selectedCourier() || busy()" (click)="assign()">
+              Assign
+            </button>
+          </div>
+        }
+      </section>
+
+      <section class="card">
+        <h2>Timeline</h2>
+        <dl class="facts">
+          <dt>Created</dt>
+          <dd>{{ d.createdAt | date: 'HH:mm:ss' }}</dd>
+          <dt>Assigned</dt>
+          <dd>{{ (d.assignedAt | date: 'HH:mm:ss') ?? '—' }}</dd>
+          <dt>Picked up</dt>
+          <dd>{{ (d.pickedUpAt | date: 'HH:mm:ss') ?? '—' }}</dd>
+          <dt>Delivered</dt>
+          <dd>{{ (d.deliveredAt | date: 'HH:mm:ss') ?? '—' }}</dd>
+          <dt>Address</dt>
+          <dd>{{ d.deliveryAddress }}</dd>
+          <dt>Customer</dt>
+          <dd>{{ d.customerName }}{{ d.customerPhone ? ' · ' + d.customerPhone : '' }}</dd>
+        </dl>
+      </section>
+    </div>
+
+    <section class="card">
+      <div class="map-header">
+        <h2>Live tracking</h2>
+        @if (canTrack()) {
+          <div class="actions">
+            @if (geolocationSupported) {
+              <button type="button" class="btn small" [class.primary]="sharingLocation()" (click)="toggleSharing()">
+                {{ sharingLocation() ? '● Sharing my location' : 'Share my location' }}
+              </button>
+            }
+            <button type="button" class="btn small" [class.primary]="autoDriving()" (click)="toggleAutoDrive()">
+              {{ autoDriving() ? 'Stop simulation' : 'Simulate drive' }}
+            </button>
+          </div>
+        }
+      </div>
+      <app-route-map [trail]="trail()" [courier]="courierPosition()" />
+      <p class="hint">
+        {{ trail().length }} GPS {{ trail().length === 1 ? 'ping' : 'pings' }} recorded
+        @if (trail().at(-1); as last) {
+          · last at {{ last.recordedAt | date: 'HH:mm:ss' }}
+          ({{ last.latitude | number: '1.4-4' }}, {{ last.longitude | number: '1.4-4' }})
+        }
+      </p>
+      @if (canTrack()) {
+        <p class="hint">
+          <strong>Share my location</strong> sends your device's real GPS every few seconds while this page is open.
+          <strong>Simulate drive</strong> fakes movement for demos.
+        </p>
+      }
+    </section>
+  </div>
+} @else if (deliveryResource.error()) {
+  <p class="card empty">This delivery could not be loaded, or it isn't yours to see.</p>
+} @else {
+  <p class="empty">Loading delivery…</p>
+}

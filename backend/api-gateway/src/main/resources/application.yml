@@ -1,0 +1,39 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:15435/auth}
+    username: ${DB_USERNAME:trackflow}
+    password: ${DB_PASSWORD:trackflow}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  # Routes are defined in GatewayRoutes (Java DSL).
+
+trackflow:
+  auth:
+    issuer: ${AUTH_ISSUER:trackflow-gateway}
+    token-ttl: ${AUTH_TOKEN_TTL:PT2H}
+    # Only needed when the Angular dev server is not using its proxy;
+    # the containerised frontend reaches the gateway same-origin via Nginx.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+    seed-demo-users: ${SEED_DEMO_USERS:true}
+    demo-password: ${DEMO_PASSWORD:trackflow123}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

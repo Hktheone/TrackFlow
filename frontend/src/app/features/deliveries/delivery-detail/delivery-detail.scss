@@ -1,0 +1,74 @@
+h1 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.spaced {
+  margin-top: 14px;
+}
+
+.hint {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.last-note {
+  margin: 14px 0 0;
+}
+
+.courier {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vehicle {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--tone-info-bg);
+  font-size: 22px;
+}
+
+.assign {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+
+  select {
+    flex: 1;
+  }
+}
+
+.map-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 14px;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.job-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-color: var(--tone-progress-fg);
+  background: var(--tone-progress-bg);
+  color: var(--tone-progress-fg);
+}

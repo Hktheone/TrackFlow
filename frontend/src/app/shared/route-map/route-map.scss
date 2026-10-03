@@ -1,0 +1,10 @@
+:host {
+  display: block;
+}
+
+.map {
+  height: 340px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  z-index: 0;
+}

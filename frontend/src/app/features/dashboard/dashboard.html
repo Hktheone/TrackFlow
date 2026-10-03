@@ -1,0 +1,105 @@
+<header class="page-header">
+  <div>
+    <h1>{{ auth.isAdmin() ? 'Operations dashboard' : 'Hi, ' + (auth.user()?.displayName ?? '') }}</h1>
+    <p>{{ auth.isAdmin() ? 'Everything across order-service and delivery-service.' : 'Your orders and deliveries.' }} Refreshes every few seconds.</p>
+  </div>
+  <a class="btn primary" routerLink="/orders/new">+ Checkout</a>
+</header>
+
+<section class="stats">
+  <div class="card stat">
+    <span class="label">Open orders</span>
+    <strong>{{ stats().openOrders }}</strong>
+    <span class="sub">{{ stats().awaitingConfirmation }} awaiting confirmation</span>
+  </div>
+  <div class="card stat">
+    <span class="label">Active deliveries</span>
+    <strong>{{ stats().activeDeliveries }}</strong>
+    <span class="sub">{{ stats().unassigned }} waiting for a rider</span>
+  </div>
+  <div class="card stat">
+    <span class="label">Delivered</span>
+    <strong>{{ stats().delivered }}</strong>
+    <span class="sub">{{ stats().revenue | currency: 'GBP' }} delivered value</span>
+  </div>
+  <div class="card stat">
+    <span class="label">Riders free</span>
+    <strong>{{ stats().availableCouriers }}<small> / {{ stats().totalCouriers }}</small></strong>
+    <span class="sub">@if (auth.isAdmin()) {<a routerLink="/riders">Manage riders</a>} @else {available to assign}</span>
+  </div>
+</section>
+
+<section class="card flow">
+  <h2>How an order moves</h2>
+  <ol>
+    <li>
+      <span class="step">1</span>
+      <div><strong>Order placed</strong><p>REST call through the gateway to order-service. Status <em>Pending</em>.</p></div>
+    </li>
+    <li>
+      <span class="step">2</span>
+      <div><strong>Order confirmed</strong><p>order-service publishes <span class="mono">ORDER_CONFIRMED</span> to <span class="mono">order-events</span>.</p></div>
+    </li>
+    <li>
+      <span class="step">3</span>
+      <div><strong>Delivery created</strong><p>delivery-service consumes it, creates a delivery; the customer then picks a rider.</p></div>
+    </li>
+    <li>
+      <span class="step">4</span>
+      <div><strong>Status flows back</strong><p>Every delivery update goes to <span class="mono">delivery-status-events</span>; order-service mirrors it.</p></div>
+    </li>
+  </ol>
+</section>
+
+<div class="panels">
+  <section class="card">
+    <div class="panel-header">
+      <h2>Recent orders</h2>
+      <a routerLink="/orders">All orders →</a>
+    </div>
+    @if (recentOrders().length === 0) {
+      <p class="empty">No orders yet.</p>
+    } @else {
+      <table>
+        <tbody>
+          @for (o of recentOrders(); track o.id) {
+            <tr>
+              <td><a class="mono" [routerLink]="['/orders', o.id]">{{ o.orderNumber }}</a></td>
+              <td>{{ o.customerName }}</td>
+              <td><app-status-badge [status]="o.status" /></td>
+              <td class="muted num">{{ o.updatedAt | date: 'HH:mm:ss' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+
+  <section class="card">
+    <div class="panel-header">
+      <h2>On the road</h2>
+      <a routerLink="/deliveries">All deliveries →</a>
+    </div>
+    @if (activeDeliveries().length === 0) {
+      <p class="empty">No active deliveries.</p>
+    } @else {
+      <table>
+        <tbody>
+          @for (d of activeDeliveries(); track d.id) {
+            <tr>
+              <td><a class="mono" [routerLink]="['/deliveries', d.id]">{{ d.orderNumber }}</a></td>
+              <td>
+                @if (d.courier; as c) {
+                  {{ vehicleIcons[c.vehicleType] }} {{ c.name }}
+                } @else {
+                  <span class="muted">Unassigned</span>
+                }
+              </td>
+              <td><app-status-badge [status]="d.status" /></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+</div>

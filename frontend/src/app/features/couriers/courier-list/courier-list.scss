@@ -1,0 +1,61 @@
+.add-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr 150px 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 20px;
+
+  @media (max-width: 800px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.courier .top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  > div {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.vehicle {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--tone-info-bg);
+  font-size: 22px;
+}
+
+.availability {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--tone-success-bg);
+  color: var(--tone-success-fg);
+  font-size: 12px;
+  font-weight: 600;
+
+  &.busy {
+    background: var(--tone-progress-bg);
+    color: var(--tone-progress-fg);
+  }
+}
+
+.meta {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.unlinked {
+  color: var(--tone-danger-fg);
+}

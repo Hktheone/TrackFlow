@@ -1,0 +1,57 @@
+<header class="page-header">
+  <div>
+    <h1>{{ auth.isAdmin() ? 'All orders' : 'My orders' }}</h1>
+    <p>Where each order is in its lifecycle. Statuses after confirmation arrive from Kafka.</p>
+  </div>
+  <a class="btn primary" routerLink="/orders/new">+ Checkout</a>
+</header>
+
+<div class="filter-tabs">
+  <button type="button" [class.active]="filter() === null" (click)="filter.set(null)">
+    All ({{ orders().length }})
+  </button>
+  @for (f of filters(); track f.status) {
+    <button type="button" [class.active]="filter() === f.status" (click)="filter.set(f.status)">
+      {{ f.label }} ({{ f.count }})
+    </button>
+  }
+</div>
+
+<section class="card">
+  @if (ordersResource.isLoading() && !ordersResource.hasValue()) {
+    <p class="empty">Loading orders…</p>
+  } @else if (visible().length === 0) {
+    <p class="empty">
+      No orders yet. <a routerLink="/orders/new">Create the first one</a> to kick off the event flow.
+    </p>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Customer</th>
+            <th>Deliver to</th>
+            <th class="num">Items</th>
+            <th class="num">Total</th>
+            <th>Status</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of visible(); track order.id) {
+            <tr class="clickable" (click)="open(order)">
+              <td class="mono">{{ order.orderNumber }}</td>
+              <td>{{ order.customerName }}</td>
+              <td class="address">{{ order.deliveryAddress }}</td>
+              <td class="num">{{ itemCount(order) }}</td>
+              <td class="num">{{ order.totalAmount | currency: 'GBP' }}</td>
+              <td><app-status-badge [status]="order.status" /></td>
+              <td class="muted">{{ order.updatedAt | date: 'MMM d, HH:mm:ss' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
